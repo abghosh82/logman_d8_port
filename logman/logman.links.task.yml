@@ -1,0 +1,7 @@
+logman.watchdog_search_form:
+  route_name: logman.watchdog_search_form
+  title: 'Logman Watchdog Search'
+logman.apache_search_form:
+  route_name: logman.apache_search_form
+  title: 'Logman Apache Log Search'
+  weight: 3
