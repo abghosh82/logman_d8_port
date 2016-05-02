@@ -10,6 +10,8 @@ namespace Drupal\logman\Form;
 use Drupal\Core\Form\FormBase;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Render\Element;
+use Drupa\logman\Helper\LogmanWatchdogSearch;
+use Drupa\logman\Helper\LogmanApacheSearch;
 
 class LogmanStatisticsForm extends FormBase {
 
@@ -21,39 +23,8 @@ class LogmanStatisticsForm extends FormBase {
   }
 
   public function buildForm(array $form, \Drupal\Core\Form\FormStateInterface $form_state) {
-    // Add the required JS and CSS.
-    $google_chart_api_url = \Drupal::config('logman.settings')->get('logman_google_chart_api_url');
-    // @FIXME
-    // The Assets API has totally changed. CSS, JavaScript, and libraries are now
-    // attached directly to render arrays using the #attached property.
-    // 
-    // 
-    // @see https://www.drupal.org/node/2169605
-    // @see https://www.drupal.org/node/2408597
-    // drupal_add_js($google_chart_api_url, array('type' => 'external', 'scope' => 'header'));
-
-    // @FIXME
-    // The Assets API has totally changed. CSS, JavaScript, and libraries are now
-    // attached directly to render arrays using the #attached property.
-    // 
-    // 
-    // @see https://www.drupal.org/node/2169605
-    // @see https://www.drupal.org/node/2408597
-    // drupal_add_js(drupal_get_path('module', 'logman') . '/js/logman_chart.js');
-
-    // @FIXME
-    // The Assets API has totally changed. CSS, JavaScript, and libraries are now
-    // attached directly to render arrays using the #attached property.
-    // 
-    // 
-    // @see https://www.drupal.org/node/2169605
-    // @see https://www.drupal.org/node/2408597
-    // drupal_add_css(drupal_get_path('module', 'logman') . '/css/logman.css');
-
-
-    // Include the log operation class.
-    module_load_include('php', 'logman', 'includes/lib/LogmanWatchdogSearch');
-    module_load_include('php', 'logman', 'includes/lib/LogmanApacheSearch');
+    // Add the required css and js.
+    $form['#attached']['library'][] = 'logman/logman-statistics';
 
     // Get watchdog statistics and add to JS settings array.
     $settings = [
@@ -65,7 +36,7 @@ class LogmanStatisticsForm extends FormBase {
         'watchdogDataSelector' => 'watchdog_data',
         'apacheDataSelector' => 'apache_data',
       ]
-      ];
+    ];
     $watchdog_against_options = ['severity', 'type'];
     $watchdog = new LogmanWatchdogSearch();
     foreach ($watchdog_against_options as $against) {
@@ -83,21 +54,20 @@ class LogmanStatisticsForm extends FormBase {
       }
     }
     else {
-      // @FIXME
-// l() expects a Url object, created from a route name or external URI.
-// drupal_set_message(t('Apache access log path either empty or not valid. !path', array('!path' => l(t('Please provide a valid apache access log path.'), 'admin/settings/logman'))));
-
+      $url = Url::fromRoute('logman.settings_form');
+      $link = Link::fromTextAndUrl(t('Please provide a valid apache access log path.'), $url);
+      drupal_set_message(t('Apache access log path either empty or not valid. !path', array('!path' => $link)));
     }
 
     // Add the JS settings array.
-    // @FIXME
-    // The Assets API has totally changed. CSS, JavaScript, and libraries are now
-    // attached directly to render arrays using the #attached property.
-    // 
-    // 
-    // @see https://www.drupal.org/node/2169605
-    // @see https://www.drupal.org/node/2408597
-    // drupal_add_js($settings, 'setting');
+    $form['#attached']['drupalSettings']['logmanStatistics'] = [
+      'watchdogPlaceholder' => 'watchdog_chart',
+      'apachePlaceholder' => 'apache_chart',
+      'watchdogTablePlaceholder' => 'watchdog_table',
+      'apacheTablePlaceholder' => 'apache_table',
+      'watchdogDataSelector' => 'watchdog_data',
+      'apacheDataSelector' => 'apache_data',
+    ];
 
 
     $form['statistics'] = [
@@ -170,4 +140,7 @@ class LogmanStatisticsForm extends FormBase {
     return $form;
   }
 
+  public function submitForm(array &$form, \Drupal\Core\Form\FormStateInterface $form_state) {
+    $form_state->setRebuild(TRUE);
+  }
 }

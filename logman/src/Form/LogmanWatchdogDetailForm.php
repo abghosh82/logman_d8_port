@@ -10,6 +10,7 @@ namespace Drupal\logman\Form;
 use Drupal\Core\Form\FormBase;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Render\Element;
+use Drupa\logman\Helper\LogmanWatchdogSearch;
 
 class LogmanWatchdogDetailForm extends FormBase {
 
@@ -21,23 +22,14 @@ class LogmanWatchdogDetailForm extends FormBase {
   }
 
   public function buildForm(array $form, \Drupal\Core\Form\FormStateInterface $form_state) {
-    // Add the required css.
-  // @FIXME
-// The Assets API has totally changed. CSS, JavaScript, and libraries are now
-// attached directly to render arrays using the #attached property.
-// 
-// 
-// @see https://www.drupal.org/node/2169605
-// @see https://www.drupal.org/node/2408597
-// drupal_add_css(drupal_get_path('module', 'logman') . '/css/logman.css', 'logman');
-
-
+    // Add the required css and js.
+    $form['#attached']['library'][] = 'logman/logman-report';
+    
     // Include the log operation class.
-    module_load_include('php', 'logman', 'includes/lib/LogmanWatchdogSearch');
     $log_id = arg(4);
 
     // Get the Severity levels.
-    $severity_levels = watchdog_severity_levels();
+    $severity_levels = drupal_error_levels();
 
     $watchdog_log = new LogmanWatchdogSearch();
     $log_detail = $watchdog_log->getLogDetail($log_id);
@@ -74,4 +66,7 @@ class LogmanWatchdogDetailForm extends FormBase {
     return $form;
   }
 
+  public function submitForm(array &$form, \Drupal\Core\Form\FormStateInterface $form_state) {
+    $form_state->setRebuild(TRUE);
+  }
 }

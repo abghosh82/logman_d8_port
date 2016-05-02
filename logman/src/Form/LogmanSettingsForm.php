@@ -10,6 +10,7 @@ namespace Drupal\logman\Form;
 use Drupal\Core\Form\ConfigFormBase;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Render\Element;
+use Drupal\logman\Helper\LogmanGraylogSearch;
 
 class LogmanSettingsForm extends ConfigFormBase {
 
@@ -193,8 +194,6 @@ class LogmanSettingsForm extends ConfigFormBase {
   public function _submitForm(array &$form, \Drupal\Core\Form\FormStateInterface $form_state) {
     // Reset graylog2 mapping if user has confirmed.
     if ($form_state->getStorage() == TRUE) {
-      // Include the graylog2/gelf operation class.
-      module_load_include('php', 'logman', 'includes/lib/LogmanGraylogSearch');
       // Reset the graylog2/gelf log for case insensitive search.
       LogmanGraylogSearch::applyCaseInsensitiveSearch();
       drupal_set_message(t('Graylog2 has been reset for case insensitive search, this has deleted existing log data. Now you can restore the backed up logs.'));

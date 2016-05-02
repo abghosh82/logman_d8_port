@@ -10,6 +10,7 @@ namespace Drupal\logman\Form;
 use Drupal\Core\Form\FormBase;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Render\Element;
+use Drupa\logman\Helper\LogmanWatchdogSearch;
 
 class LogmanWatchdogSearchForm extends FormBase {
 
@@ -22,27 +23,7 @@ class LogmanWatchdogSearchForm extends FormBase {
 
   public function buildForm(array $form, \Drupal\Core\Form\FormStateInterface $form_state) {
     // Add the required css and js.
-  // @FIXME
-// The Assets API has totally changed. CSS, JavaScript, and libraries are now
-// attached directly to render arrays using the #attached property.
-// 
-// 
-// @see https://www.drupal.org/node/2169605
-// @see https://www.drupal.org/node/2408597
-// drupal_add_css(drupal_get_path('module', 'logman') . '/css/logman.css', 'logman');
-
-    // @FIXME
-// The Assets API has totally changed. CSS, JavaScript, and libraries are now
-// attached directly to render arrays using the #attached property.
-// 
-// 
-// @see https://www.drupal.org/node/2169605
-// @see https://www.drupal.org/node/2408597
-// drupal_add_js(drupal_get_path('module', 'logman') . '/js/logman_search.js');
-
-
-    // Include the log operation class.
-    module_load_include('php', 'logman', 'includes/lib/LogmanWatchdogSearch');
+    $form['#attached']['library'][] = 'logman/logman-report';
 
     // Build form_state values from $_GET.
     // Not ideal but drupal pagination works with query string.

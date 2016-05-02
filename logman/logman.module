@@ -4,73 +4,8 @@
  * Logman module file.
  */
 
-/**
- * Implements hook_menu().
- */
-function logman_menu() {
-  $items['admin/config/development/logman'] = array(
-    'title' => 'Logman Settings',
-    'description' => 'Logman configuration settings',
-    'page callback' => 'drupal_get_form',
-    'page arguments' => array('logman_settings_form'),
-    'access arguments' => array('administer logman'),
-    'file' => 'includes/logman_settings.inc',
-  );
-
-  $items['admin/reports/logman'] = array(
-    'title' => 'Logman Reports',
-    'description' => 'Logman reports and statistics',
-    'page callback' => 'drupal_get_form',
-    'page arguments' => array('logman_statistics_form'),
-    'access arguments' => array('access logman'),
-    'type' => MENU_NORMAL_ITEM,
-  );
-
-  $items['admin/reports/logman/watchdog'] = array(
-    'title' => 'Logman Watchdog Search',
-    'description' => 'Search drupal watchdog',
-    'page callback' => 'drupal_get_form',
-    'page arguments' => array('logman_watchdog_search_form'),
-    'access arguments' => array('access logman'),
-    'type' => MENU_LOCAL_TASK,
-    'file' => 'includes/logman_watchdog.inc',
-  );
-
-  $items['admin/reports/logman/watchdog/%/detail'] = array(
-    'title' => 'Logman Watchdog Log Detail',
-    'description' => 'Drupal watchdog log detail',
-    'page callback' => 'drupal_get_form',
-    'page arguments' => array('logman_watchdog_detail_form'),
-    'access arguments' => array('access logman'),
-    'type' => MENU_CALLBACK,
-    'file' => 'includes/logman_watchdog.inc',
-  );
-
-  $items['admin/reports/logman/apache-log'] = array(
-    'title' => 'Logman Apache Log Search',
-    'description' => 'Search your apache access log.',
-    'page callback' => 'drupal_get_form',
-    'page arguments' => array('logman_apache_search_form'),
-    'access arguments' => array('access logman'),
-    'type' => MENU_LOCAL_TASK,
-    'file' => 'includes/logman_apache.inc',
-    'weight' => 3,
-  );
-  return $items;
-}
-
-/**
- * Implements hook_perm().
- *
- * Provides the user permissions
- * to access and administer logman.
- */
-function logman_perm() {
-  return array(
-    'access logman',
-    'administer logman',
-  );
-}
+use Drupa\logman\Helper\LogmanWatchdogSearch;
+use Drupa\logman\Helper\LogmanApacheSearch;
 
 /**
  * Implements hook_page_alter().
@@ -81,30 +16,8 @@ function logman_perm() {
 function logman_page_alter(&$page) {
   if (logman_visibility() === TRUE) {
     $logman_page_statistics = logman_get_page_statistics();
-    // @FIXME
-// theme() has been renamed to _theme() and should NEVER be called directly.
-// Calling _theme() directly can alter the expected output and potentially
-// introduce security issues (see https://www.drupal.org/node/2195739). You
-// should use renderable arrays instead.
-// 
-// 
-// @see https://www.drupal.org/node/2195739
-// $page['page_bottom']['logman'] = array(
-//       '#attached' => array(
-//         'css' => array(
-//           drupal_get_path('module', 'logman') . '/css/logman.css' => array(
-//             'every_page' => 0,
-//           ),
-//         ),
-//         'js' => array(
-//           drupal_get_path('module', 'logman') . '/js/logman.js' => array(
-//             'every_page' => 0,
-//           ),
-//         ),
-//       ),
-//       '#markup' => theme('logman_area', $logman_page_statistics),
-//     );
-
+    $page['page_bottom']['logman']['#attached']['library'][] = 'logman/logman-page-statistics';
+    $page['page_bottom']['logman']['#attached']['#markup'] = \Drupal::service('renderer')->render($logman_page_statistics);
   }
 }
 
@@ -118,162 +31,6 @@ function logman_theme($existing, $type, $theme, $path) {
       'variables' => array('logman_page_statistics' => NULL, 'log_class' => NULL),
     ),
   );
-}
-
-/**
- * Function to provide logman statistics.
- *
- * Display full statistics form drupal watchdog
- * and apache access log.
- */
-function logman_statistics_form($form, &$form_state) {
-  // Add the required JS and CSS.
-  $google_chart_api_url = \Drupal::config('logman.settings')->get('logman_google_chart_api_url');
-  // @FIXME
-// The Assets API has totally changed. CSS, JavaScript, and libraries are now
-// attached directly to render arrays using the #attached property.
-// 
-// 
-// @see https://www.drupal.org/node/2169605
-// @see https://www.drupal.org/node/2408597
-// drupal_add_js($google_chart_api_url, array('type' => 'external', 'scope' => 'header'));
-
-  // @FIXME
-// The Assets API has totally changed. CSS, JavaScript, and libraries are now
-// attached directly to render arrays using the #attached property.
-// 
-// 
-// @see https://www.drupal.org/node/2169605
-// @see https://www.drupal.org/node/2408597
-// drupal_add_js(drupal_get_path('module', 'logman') . '/js/logman_chart.js');
-
-  // @FIXME
-// The Assets API has totally changed. CSS, JavaScript, and libraries are now
-// attached directly to render arrays using the #attached property.
-// 
-// 
-// @see https://www.drupal.org/node/2169605
-// @see https://www.drupal.org/node/2408597
-// drupal_add_css(drupal_get_path('module', 'logman') . '/css/logman.css');
-
-
-  // Include the log operation class.
-  module_load_include('php', 'logman', 'includes/lib/LogmanWatchdogSearch');
-  module_load_include('php', 'logman', 'includes/lib/LogmanApacheSearch');
-
-  // Get watchdog statistics and add to JS settings array.
-  $settings = array(
-    'logmanStatistics' => array(
-      'watchdogPlaceholder' => 'watchdog_chart',
-      'apachePlaceholder' => 'apache_chart',
-      'watchdogTablePlaceholder' => 'watchdog_table',
-      'apacheTablePlaceholder' => 'apache_table',
-      'watchdogDataSelector' => 'watchdog_data',
-      'apacheDataSelector' => 'apache_data',
-    ),
-  );
-  $watchdog_against_options = array('severity', 'type');
-  $watchdog = new LogmanWatchdogSearch();
-  foreach ($watchdog_against_options as $against) {
-    $watchdog_statistics_raw = $watchdog->getStatistics(NULL, $against);
-    $settings['logmanStatistics'][$against] = logman_prapare_chartable_data($watchdog_statistics_raw, 'watchdog', $against);
-  }
-
-  // Get apache statistics.
-  $apache = new LogmanApacheSearch(\Drupal::config('logman.settings')->get('logman_apache_log_path'));
-  if ($apache->checkApacheLogPath() === TRUE) {
-    $apache_against_options = array('code', 'method');
-    foreach ($apache_against_options as $against) {
-      $apache_statistics = $apache->getStatistics(NULL, $against);
-      $settings['logmanStatistics'][$against] = logman_prapare_chartable_data($apache_statistics, 'apache', $against);
-    }
-  }
-  else {
-    // @FIXME
-// l() expects a Url object, created from a route name or external URI.
-// drupal_set_message(t('Apache access log path either empty or not valid. !path', array('!path' => l(t('Please provide a valid apache access log path.'), 'admin/settings/logman'))));
-
-  }
-
-  // Add the JS settings array.
-  // @FIXME
-// The Assets API has totally changed. CSS, JavaScript, and libraries are now
-// attached directly to render arrays using the #attached property.
-// 
-// 
-// @see https://www.drupal.org/node/2169605
-// @see https://www.drupal.org/node/2408597
-// drupal_add_js($settings, 'setting');
-
-
-  $form['statistics'] = array(
-    '#type' => 'fieldset',
-    '#title' => t('Logman Statistics'),
-  );
-
-  $form['statistics']['watchdog'] = array(
-    '#type' => 'fieldset',
-    '#title' => t('Watchdog'),
-    '#tree' => TRUE,
-    '#suffix' => '<div class="logman_clear"></div>',
-  );
-
-  $form['statistics']['watchdog']['against'] = array(
-    '#type' => 'select',
-    '#options' => array(
-      'severity' => t('Severity'),
-      'type' => t('Type'),
-    ),
-    '#default_value' => 'severity',
-  );
-
-  // Watchdog chart and data table.
-  $form['statistics']['watchdog']['chart'] = array(
-    '#markup' => '<br /><div id="watchdog_chart"></div>',
-  );
-
-  $form['statistics']['watchdog']['table'] = array(
-    '#markup' => '<div id="watchdog_table"></div>',
-    '#prefix' => '<div class="log_data_table"><b><u>' . t('Chart Data') . '</u></b>',
-    '#suffix' => '</div>',
-  );
-
-  $form['statistics']['apache'] = array(
-    '#type' => 'fieldset',
-    '#title' => t('Apache'),
-    '#tree' => TRUE,
-    '#suffix' => '<div class="logman_clear"></div>',
-  );
-
-  // Display chart only if apache access log path is correctly set.
-  if ($apache->checkApacheLogPath() === TRUE) {
-    $form['statistics']['apache']['against'] = array(
-      '#type' => 'select',
-      '#options' => array(
-        'code' => t('Response Code'),
-        'method' => t('Method'),
-      ),
-      '#default_value' => 'code',
-    );
-
-    // Apache chart and data table.
-    $form['statistics']['apache']['chart'] = array(
-      '#markup' => '<div id="apache_chart"></div>',
-    );
-
-    $form['statistics']['apache']['table'] = array(
-      '#markup' => '<div id="apache_table"></div>',
-      '#prefix' => '<div class="log_data_table"><b><u>' . t('Chart Data') . '</u></b>',
-      '#suffix' => '</div>',
-    );
-  }
-  else {
-    $form['statistics']['apache']['path_error'] = array(
-      '#markup' => t('Apache access log path is wrong or not set.'),
-    );
-  }
-
-  return $form;
 }
 
 /**
@@ -302,20 +59,7 @@ function logman_get_page_statistics() {
       $date_range = array();
   }
 
-  if ($_GET['q'] == 'front') {
-    // For the home page url. The errors are not logged on <domain>/front.
-    // @FIXME
-// url() expects a route name or an external URI.
-// $url = url('', array('absolute' => TRUE));
-
-  }
-  else {
-    // @FIXME
-// url() expects a route name or an external URI.
-// $url = url($_GET['q'], array('absolute' => TRUE));
-
-  }
-
+  $url = url(current_path(), array('absolute' => TRUE));
   $watchdog = new LogmanWatchdogSearch();
   $statistics = $watchdog->getPageStatistics($url, $date_range);
   // Theme the statistics.
@@ -344,10 +88,9 @@ function logman_get_page_statistics() {
           'severity' => $item->severity,
         ),
       );
-      // @FIXME
-// l() expects a Url object, created from a route name or external URI.
-// $themed_statistics_details[] = l("$error_count $error_type", 'admin/reports/logman/watchdog', $options);
 
+      $url = Url::fromRoute('logman.statistics_form', $options);
+      $themed_statistics_details[] = Link::fromTextAndUrl("$error_count $error_type", $url);
     }
     $statistics_class = $severity_levels[$statistics[0]->severity];
     end($themed_statistics_details);
@@ -440,4 +183,12 @@ function logman_prapare_chartable_data($data, $log_type, $against) {
     }
   }
   return $chart_data = "[" . implode(', ', $chart_data) . "]";
+}
+
+
+/**
+ * Submit handler for graylog2/gelf log reset.
+ */
+function logman_settings_form_gelf_reset(&$form, &$form_state) {
+  $form_state['storage']['confirm'] = TRUE;
 }
