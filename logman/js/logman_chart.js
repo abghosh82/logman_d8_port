@@ -1,4 +1,4 @@
-(function ($) {
+(function ($, Drupal, drupalSettings) {
   /**
    * Load google charting package and call the
    * function to draw the charts.
@@ -20,14 +20,14 @@
    */
   function drawWatchdogChart(filter) {
     var watchdogAgainst = $('#edit-watchdog-against').val();
-    var chartData = eval(eval('Drupal.settings.logmanStatistics.' + watchdogAgainst));
+    var chartData = eval(eval('drupalSettings.logmanStatistics.' + watchdogAgainst));
     if (filter == 1) {
       chartData = dataFilter(chartData);
-      drawChart(chartData, watchdogAgainst, Drupal.settings.logmanStatistics.watchdogPlaceholder);
+      drawChart(chartData, watchdogAgainst, drupalSettings.logmanStatistics.watchdogPlaceholder);
     }
     else {
-      drawChart(chartData, watchdogAgainst, Drupal.settings.logmanStatistics.watchdogPlaceholder);
-      drawTable(chartData, Drupal.settings.logmanStatistics.watchdogTablePlaceholder, Drupal.settings.logmanStatistics.watchdogDataSelector);
+      drawChart(chartData, watchdogAgainst, drupalSettings.logmanStatistics.watchdogPlaceholder);
+      drawTable(chartData, drupalSettings.logmanStatistics.watchdogTablePlaceholder, drupalSettings.logmanStatistics.watchdogDataSelector);
     }
   }
 
@@ -38,14 +38,14 @@
    */
   function drawApacheChart(filter) {
     var apacheAgainst = $('#edit-apache-against').val();
-    var chartData = eval(eval('Drupal.settings.logmanStatistics.' + apacheAgainst));
+    var chartData = eval(eval('drupalSettings.logmanStatistics.' + apacheAgainst));
     if (filter == 1) {
       chartData = dataFilter(chartData);
-      drawChart(chartData, apacheAgainst, Drupal.settings.logmanStatistics.apachePlaceholder);
+      drawChart(chartData, apacheAgainst, drupalSettings.logmanStatistics.apachePlaceholder);
     }
     else {
-      drawChart(chartData, apacheAgainst, Drupal.settings.logmanStatistics.apachePlaceholder);
-      drawTable(chartData, Drupal.settings.logmanStatistics.apacheTablePlaceholder, Drupal.settings.logmanStatistics.apacheDataSelector);
+      drawChart(chartData, apacheAgainst, drupalSettings.logmanStatistics.apachePlaceholder);
+      drawTable(chartData, drupalSettings.logmanStatistics.apacheTablePlaceholder, drupalSettings.logmanStatistics.apacheDataSelector);
     }
   }
 
@@ -112,7 +112,7 @@
     return filteredData;
   }
 
-    Drupal.behaviors.logmaStatistics = {
+    Drupal.behaviors.logman = {
         attach: function (context, settings) {
       // Show different chart whenever a different value for against is selected.
       $('#edit-watchdog-against').change(function (){
@@ -123,18 +123,18 @@
       });
 
       // Change the chart based on selected charting data.
-      $('#' + Drupal.settings.logmanStatistics.watchdogTablePlaceholder).bind("DOMSubtreeModified", function() {
-        $('.' + Drupal.settings.logmanStatistics.watchdogDataSelector).change(function (){
+      $('#' + settings.logmanStatistics.watchdogTablePlaceholder).bind("DOMSubtreeModified", function() {
+        $('.' + settings.logmanStatistics.watchdogDataSelector).change(function (){
           drawWatchdogChart(1);
           return false;
         });
       });
-      $('#' + Drupal.settings.logmanStatistics.apacheTablePlaceholder).bind("DOMSubtreeModified", function() {
-        $('.' + Drupal.settings.logmanStatistics.apacheDataSelector).change(function (){
+      $('#' + settings.logmanStatistics.apacheTablePlaceholder).bind("DOMSubtreeModified", function() {
+        $('.' + settings.logmanStatistics.apacheDataSelector).change(function (){
           drawApacheChart(1);
           return false;
         });
       });
     }
   };
-}(jQuery));
+}(jQuery, Drupal, drupalSettings));

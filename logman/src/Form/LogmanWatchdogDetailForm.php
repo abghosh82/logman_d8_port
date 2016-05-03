@@ -10,7 +10,7 @@ namespace Drupal\logman\Form;
 use Drupal\Core\Form\FormBase;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Render\Element;
-use Drupa\logman\Helper\LogmanWatchdogSearch;
+use Drupal\logman\Helper\LogmanWatchdogSearch;
 
 class LogmanWatchdogDetailForm extends FormBase {
 

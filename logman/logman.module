@@ -4,8 +4,8 @@
  * Logman module file.
  */
 
-use Drupa\logman\Helper\LogmanWatchdogSearch;
-use Drupa\logman\Helper\LogmanApacheSearch;
+use Drupal\logman\Helper\LogmanWatchdogSearch;
+use Drupal\logman\Helper\LogmanApacheSearch;
 
 /**
  * Implements hook_page_alter().
@@ -40,9 +40,6 @@ function logman_theme($existing, $type, $theme, $path) {
  *   Themed page statistics.
  */
 function logman_get_page_statistics() {
-  // Include the log operation class.
-  module_load_include('php', 'logman', 'includes/lib/LogmanWatchdogSearch');
-
   $statistics_duration = \Drupal::config('logman.settings')->get('logman_page_statistics_duration');
   $statistics_duration_unit = \Drupal::config('logman.settings')->get('logman_page_statistics_duration_unit');
   // Prepare date range array.
@@ -68,11 +65,9 @@ function logman_get_page_statistics() {
     '@unit' => $statistics_duration_unit,
   );
   if (!empty($statistics)) {
-    // Severity levels.
-    $severity_levels = watchdog_severity_levels();
     $themed_statistics_details = array();
     foreach ($statistics as $item) {
-      $error_type = ucwords($severity_levels[$item->severity]);
+      $error_type = logman_get_severity_name($item->severity);
       $error_count = $item->count;
       $options = array(
         'query' => array(
@@ -132,20 +127,23 @@ function logman_visibility() {
  * @param array $form_state
  *   The form_state array.
  */
-function logman_prepare_form_state($field_keys, &$form_state) {
+function logman_prepare_form_state($field_keys, $form_state) {
   foreach ($field_keys as $key) {
-    if (isset($_GET[$key]) && !isset($form_state['values'][$key])) {
-      $form_state['values'][$key] = $_GET[$key];
+    $value = $form_state->getValue($key);
+    if (isset($_GET[$key]) && !isset($value)) {
+      $form_state->setValue($key, $_GET[$key]);
     }
   }
 
   // Properly format the date range values into form_state
   // if it is not formatted to a string.
-  if (!empty($form_state['values']['date_from']) && is_array($form_state['values']['date_from'])) {
-    $form_state['values']['date_from'] = trim(implode(' ', $form_state['values']['date_from']));
+  $value = $form_state->getValue('date_from');
+  if (!empty($value) && is_array($value)) {
+    $form_state->setValue('date_from', trim(implode(' ', $value)));
   }
-  if (!empty($form_state['values']['date_to']) && is_array($form_state['values']['date_to'])) {
-    $form_state['values']['date_to'] = trim(implode(' ', $form_state['values']['date_to']));
+  $value = $form_state->getValue('date_to');
+  if (!empty($value) && is_array($value)) {
+    $form_state->setValue('date_to', trim(implode(' ', $value)));
   }
 }
 
@@ -164,14 +162,12 @@ function logman_prepare_form_state($field_keys, &$form_state) {
  * @return string
  *   JS array formatted string for chart data.
  */
-function logman_prapare_chartable_data($data, $log_type, $against) {
-  // Severity levels.
-  $severity_levels = watchdog_severity_levels();
+function logman_prepare_chartable_data($data, $log_type, $against) {
   $chart_data = array("['$against', 'Counts']");
   foreach ($data as $key => $item) {
     if ($log_type == 'watchdog') {
       if ($against == 'severity') {
-        $key = ucwords($severity_levels[$item->$against]);
+        $key = logman_get_severity_name($item->$against);
       }
       else {
         $key = ucwords($item->$against);
@@ -191,4 +187,29 @@ function logman_prapare_chartable_data($data, $log_type, $against) {
  */
 function logman_settings_form_gelf_reset(&$form, &$form_state) {
   $form_state['storage']['confirm'] = TRUE;
+}
+
+/**
+ * Provides severity name.
+ *
+ * @param object $against
+ *   Severity level.
+ *
+ * @return \Drupal\Core\StringTranslation\TranslatableMarkup|string
+ */
+function logman_get_severity_name($against) {
+  // Severity levels.
+  $severity_levels = drupal_error_levels();
+  $severity_name = '';
+  foreach ($severity_levels as $level) {
+    list($name, $level_num) = $level;
+    if ($level_num == $against) {
+      $severity_name .= ucwords($name) . ' ';
+    }
+  }
+  if (empty($severity_name)) {
+    $severity_name = t('Unknown');
+  }
+
+  return $severity_name;
 }

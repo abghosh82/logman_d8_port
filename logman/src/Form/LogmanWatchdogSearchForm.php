@@ -10,7 +10,8 @@ namespace Drupal\logman\Form;
 use Drupal\Core\Form\FormBase;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Render\Element;
-use Drupa\logman\Helper\LogmanWatchdogSearch;
+use Drupal\Core\Url;
+use Drupal\logman\Helper\LogmanWatchdogSearch;
 
 class LogmanWatchdogSearchForm extends FormBase {
 
@@ -40,12 +41,8 @@ class LogmanWatchdogSearchForm extends FormBase {
     ];
     logman_prepare_form_state($field_keys, $form_state);
 
-    // Set the form action to the menu path of this page to reset
-    // the filter form previous search on click of search button.
-    // @FIXME
-    // url() expects a route name or an external URI.
-    // $form['#action'] = url($_GET['q']);
-
+    // @FIXME: D8 doesn't allows this.
+    //$form['#action'] = url(current_path());
 
     // Field set container for search form.
     $form['watchdog_search'] = [
@@ -76,13 +73,10 @@ class LogmanWatchdogSearchForm extends FormBase {
     ];
 
     // Log severity.
-    $severity_options = array_map('ucwords', [
-      'all' => 'All'
-      ] + watchdog_severity_levels());
     $form['watchdog_search']['severity'] = [
       '#type' => 'select',
       '#title' => t('Severity'),
-      '#options' => $severity_options,
+      '#options' => $this->getSeverityLevels(),
       '#default_value' => !$form_state->getValue([
         'severity'
         ]) ? $form_state->getValue(['severity']) : 'all',
@@ -153,7 +147,7 @@ class LogmanWatchdogSearchForm extends FormBase {
 
     // Display the search result.
     $items_per_page = \Drupal::config('logman.settings')->get('logman_items_per_page');
-    $search_result = logman_watchdog_search_result($form_state, $items_per_page);
+    $search_result = $this->searchResult($form_state, $items_per_page);
     if (!empty($search_result['themed_result'])) {
       $form['watchdog_search_result'] = [
         '#type' => 'fieldset',
@@ -176,6 +170,116 @@ class LogmanWatchdogSearchForm extends FormBase {
 
   public function submitForm(array &$form, \Drupal\Core\Form\FormStateInterface $form_state) {
     $form_state->setRebuild(TRUE);
+  }
+
+  protected function searchResult($form_state, $items_per_page = 10, $quantity = 9) {
+    // Check for the log type.
+    $search_key = $form_state->getValue('search_key');
+    $log_type = $form_state->getValue('log_type');
+    if (isset($search_key) || isset($log_type)) {
+      $log_type = isset($log_type) ? $log_type : 'all';
+      if ($log_type == 'all') {
+        $watchdog_log = new LogmanWatchdogSearch($search_key);
+      }
+      else {
+        $watchdog_log = new LogmanWatchdogSearch($search_key, $log_type);
+      }
+    }
+    else {
+      $watchdog_log = new LogmanWatchdogSearch();
+    }
+
+    // Prepare the params array.
+    $params = array();
+    $search_fields = array('severity', 'uid', 'location', 'referer');
+    foreach ($search_fields as $search_field) {
+      $value = $form_state->getValue($search_field);
+      if (isset($value) && $value != 'all') {
+        $params[$search_field] = $value;
+      }
+    }
+    // Prepare the date range.
+    $value_from = $form_state->getValue('date_from');
+    $value_to = $form_state->getValue('date_to');
+    if (!empty($value) && !empty($value_to)) {
+      $params['date_range'] = array(strtotime($value_from), strtotime($value_to));
+    }
+    elseif (!empty($value_from) && empty($value_to)) {
+      $params['date_range'] = array(strtotime($value_from));
+    }
+    else {
+      $params['date_range'] = array();
+    }
+
+    $watchdog_log->setLimit($items_per_page);
+    $watchdog_log->setQuantity($quantity);
+    $search_result = $watchdog_log->searchLog($params);
+    if (count($search_result->matches) > 0) {
+      // Get the Severity levels.
+      $severity_levels = $this->getSeverityLevels();
+
+      $rows = array();
+      foreach ($search_result->matches as $data) {
+        $replacements = unserialize($data['variables']);
+        $message = $data['message'];
+        if (!empty($replacements)) {
+          $message = str_replace(array_keys($replacements), array_values($replacements), $data['message']);
+        }
+
+        $url = Url::fromRoute('logman.watchdog_detail_form', array('wid' => $data['wid']), array(
+            'attributes' => array(
+                'target' => '_blank',
+            ),
+        ));
+        $log_detail_link = Link::fromTextAndUrl($message, $url);
+        $rows[] = array(
+          $data['wid'],
+          ucwords($data['type']),
+          $log_detail_link,
+          ucwords($severity_levels[$data['severity']]),
+          $data['uid'],
+          $data['location'],
+          $data['referer'],
+          date('Y-m-d H:i:s', $data['timestamp']),
+        );
+      }
+      $header = array(
+        t('Wid'),
+        t('Type'),
+        t('Message'),
+        t('Severity'),
+        t('User'),
+        t('Location'),
+        t('Referrer'),
+        t('DateTime'),
+      );
+      $themed_result = theme('table', array('header' => $header, 'rows' => $rows));
+    }
+    else {
+      $themed_result = t('No matches found.');
+    }
+
+    return array(
+      'result' => $search_result,
+      'themed_result' => $themed_result,
+    );
+  }
+
+  /**
+   * Provides severity levels.
+   *
+   * @return array
+   */
+  protected function getSeverityLevels() {
+    // Severity levels.
+    $levels = ['all' => 'All'];
+    $severity_levels = drupal_error_levels();
+    foreach ($severity_levels as $level) {
+      list($name, $level_num) = $level;
+      $levels[] = ucwords($name);
+    }
+
+    return $levels;
   }
 
 }

@@ -3,8 +3,7 @@ description: 'Provides a better UI for watchdog and includes apache log search. 
 core: 8.x
 package: Development
 dependencies:
-  - date
-  - date_popup
+  - drupal:datetime
 version: 8.x-1.x
 project: logman
 datestamp: '1456824974'

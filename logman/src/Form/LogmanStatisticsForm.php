@@ -10,8 +10,8 @@ namespace Drupal\logman\Form;
 use Drupal\Core\Form\FormBase;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Render\Element;
-use Drupa\logman\Helper\LogmanWatchdogSearch;
-use Drupa\logman\Helper\LogmanApacheSearch;
+use Drupal\logman\Helper\LogmanWatchdogSearch;
+use Drupal\logman\Helper\LogmanApacheSearch;
 
 class LogmanStatisticsForm extends FormBase {
 
@@ -26,22 +26,23 @@ class LogmanStatisticsForm extends FormBase {
     // Add the required css and js.
     $form['#attached']['library'][] = 'logman/logman-statistics';
 
-    // Get watchdog statistics and add to JS settings array.
-    $settings = [
-      'logmanStatistics' => [
-        'watchdogPlaceholder' => 'watchdog_chart',
-        'apachePlaceholder' => 'apache_chart',
-        'watchdogTablePlaceholder' => 'watchdog_table',
-        'apacheTablePlaceholder' => 'apache_table',
-        'watchdogDataSelector' => 'watchdog_data',
-        'apacheDataSelector' => 'apache_data',
-      ]
-    ];
+    // JS settings for statistics and charting.
+      $settings = [
+          'logmanStatistics' => [
+            'watchdogPlaceholder' => 'watchdog_chart',
+            'apachePlaceholder' => 'apache_chart',
+            'watchdogTablePlaceholder' => 'watchdog_table',
+            'apacheTablePlaceholder' => 'apache_table',
+            'watchdogDataSelector' => 'watchdog_data',
+            'apacheDataSelector' => 'apache_data',
+          ],
+      ];
+
     $watchdog_against_options = ['severity', 'type'];
     $watchdog = new LogmanWatchdogSearch();
     foreach ($watchdog_against_options as $against) {
       $watchdog_statistics_raw = $watchdog->getStatistics(NULL, $against);
-      $settings['logmanStatistics'][$against] = logman_prapare_chartable_data($watchdog_statistics_raw, 'watchdog', $against);
+      $settings['logmanStatistics'][$against] = logman_prepare_chartable_data($watchdog_statistics_raw, 'watchdog', $against);
     }
 
     // Get apache statistics.
@@ -50,7 +51,7 @@ class LogmanStatisticsForm extends FormBase {
       $apache_against_options = ['code', 'method'];
       foreach ($apache_against_options as $against) {
         $apache_statistics = $apache->getStatistics(NULL, $against);
-        $settings['logmanStatistics'][$against] = logman_prapare_chartable_data($apache_statistics, 'apache', $against);
+        $settings['logmanStatistics'][$against] = logman_prepare_chartable_data($apache_statistics, 'apache', $against);
       }
     }
     else {
@@ -60,15 +61,7 @@ class LogmanStatisticsForm extends FormBase {
     }
 
     // Add the JS settings array.
-    $form['#attached']['drupalSettings']['logmanStatistics'] = [
-      'watchdogPlaceholder' => 'watchdog_chart',
-      'apachePlaceholder' => 'apache_chart',
-      'watchdogTablePlaceholder' => 'watchdog_table',
-      'apacheTablePlaceholder' => 'apache_table',
-      'watchdogDataSelector' => 'watchdog_data',
-      'apacheDataSelector' => 'apache_data',
-    ];
-
+    $form['#attached']['drupalSettings'] = $settings;
 
     $form['statistics'] = [
       '#type' => 'fieldset',

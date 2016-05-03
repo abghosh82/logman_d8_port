@@ -8,6 +8,9 @@
 
 namespace Drupal\logman\Helper;
 
+use Drupal\logman\HelperLogmanDblogSearch;
+use Drupal\logman\Helper\LogmanGraylogSearch;
+
 /**
  * Implements the search, filtering and statistics
  * function for drupal watchdog logs.
@@ -30,11 +33,9 @@ class LogmanWatchdogSearch implements LogmanSearchInterface {
     $this->logType = \Drupal::config('logman.settings')->get('logman_watchdog_log_type');
     // Based on the log type create the log object accordingly.
     if ($this->logType == 'dblog') {
-      require_once 'LogmanDblogSearch.php';
       $this->logObject = new LogmanDblogSearch($search_key, $type, $limit);
     }
     else {
-      require_once 'LogmanGraylogSearch.php';
       $this->logObject = new LogmanGraylogSearch($search_key, $type, $limit);
     }
   }

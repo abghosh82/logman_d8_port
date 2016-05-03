@@ -14,8 +14,8 @@ logman-statistics:
     theme:
       css/logman.css: {}
   js:
+    https://www.google.com/jsapi: {type: external}
     js/logman_chart.js: {}
-    https://www.google.com/jsapi: {}
   dependencies:
       - core/jquery
       - core/drupalSettings

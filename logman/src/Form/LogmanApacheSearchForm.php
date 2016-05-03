@@ -11,7 +11,7 @@ use Drupal\Core\Form\FormBase;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Render\Element;
 use Drupal\Core\Url;
-use Drupa\logman\Helper\LogmanApacheSearch;
+use Drupal\logman\Helper\LogmanApacheSearch;
 
 class LogmanApacheSearchForm extends FormBase {
 
@@ -159,8 +159,6 @@ class LogmanApacheSearchForm extends FormBase {
       $apache_access_log_path = \Drupal::config('logman.settings')->get('logman_apache_log_path');
       $item_per_page = \Drupal::config('logman.settings')->get('logman_log_item_per_page');
 
-      // Include the log operation class.
-      module_load_include('php', 'logman', 'includes/lib/LogmanApacheSearch');
       $apache_log = new LogmanApacheSearch($apache_access_log_path, $item_per_page);
 
       if ($apache_log->checkApacheLogPath() === FALSE) {
@@ -189,7 +187,7 @@ class LogmanApacheSearchForm extends FormBase {
           ),
         );
         $output = \Drupal::service('renderer')->render($table);
-        $pager = array('#theme' => 'pager');
+        $pager = array('#theme' => 'pager', array('quantity' => $quantity, 'parameters' => $option));
         $output .= \Drupal::service('renderer')->render($pager);
 
         return array(

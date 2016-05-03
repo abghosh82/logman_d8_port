@@ -178,20 +178,14 @@ class LogmanDblogSearch implements LogmanSearchInterface {
     $total_result_count = $count_query->execute()->fetchField();
     $result_sets = ceil($total_result_count / $this->limit);
     $pagination_params = array('search_key' => $this->searchKey, 'log_type' => $this->type) + $params;
-    // @FIXME
-// theme() has been renamed to _theme() and should NEVER be called directly.
-// Calling _theme() directly can alter the expected output and potentially
-// introduce security issues (see https://www.drupal.org/node/2195739). You
-// should use renderable arrays instead.
-// 
-// 
-// @see https://www.drupal.org/node/2195739
-// return (object) array(
-//       'result_sets' => $result_sets,
-//       'pagination' => theme('pager', array('quantity' => $this->quantity, 'parameters' => $pagination_params)),
-//       'matches' => $matches,
-//     );
+    $pager = array('#theme' => 'pager', array('quantity' => $this->quantity, 'parameters' => $pagination_params));
+    $pagination = \Drupal::service('renderer')->render($pager);
 
+    return (object) array(
+      'result_sets' => $result_sets,
+      'pagination' => $pagination,
+      'matches' => $matches,
+    );
   }
 
   /**
