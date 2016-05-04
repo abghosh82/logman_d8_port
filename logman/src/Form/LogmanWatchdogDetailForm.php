@@ -24,13 +24,8 @@ class LogmanWatchdogDetailForm extends FormBase {
   public function buildForm(array $form, \Drupal\Core\Form\FormStateInterface $form_state) {
     // Add the required css and js.
     $form['#attached']['library'][] = 'logman/logman-report';
-    
-    // Include the log operation class.
-    $log_id = arg(4);
 
-    // Get the Severity levels.
-    $severity_levels = drupal_error_levels();
-
+    $log_id = $_GET['wid'];
     $watchdog_log = new LogmanWatchdogSearch();
     $log_detail = $watchdog_log->getLogDetail($log_id);
 
@@ -48,7 +43,7 @@ class LogmanWatchdogDetailForm extends FormBase {
         $field_value = print_r(unserialize($value), TRUE);
       }
       elseif ($field == 'severity') {
-        $field_value = ucwords($severity_levels[$value]);
+        $field_value = logman_get_severity_name($value);
       }
       elseif ($field == 'timestamp') {
         $field_value = date('Y-m-d H:i:s', $value);
@@ -57,7 +52,7 @@ class LogmanWatchdogDetailForm extends FormBase {
         $field_value = $value;
       }
       $form['log_detail'][$field] = [
-        '#value' => '<div class="log_field">' . ucwords($field) . ': </div><div class="log_field_value">' . $field_value . '</div>',
+        '#markup' => '<div class="log_field">' . ucwords($field) . ': </div><div class="log_field_value">' . $field_value . '</div>',
         '#prefix' => '<div class = "log_detail_item">',
         '#suffix' => '<div class = "logman_clear"></div></div>',
       ];

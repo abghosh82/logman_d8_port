@@ -11,6 +11,7 @@ use Drupal\Core\Form\FormBase;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Render\Element;
 use Drupal\Core\Url;
+use Drupal\Core\Link;
 use Drupal\logman\Helper\LogmanWatchdogSearch;
 
 class LogmanWatchdogSearchForm extends FormBase {
@@ -227,9 +228,9 @@ class LogmanWatchdogSearchForm extends FormBase {
         }
 
         $url = Url::fromRoute('logman.watchdog_detail_form', array('wid' => $data['wid']), array(
-            'attributes' => array(
-                'target' => '_blank',
-            ),
+          'attributes' => array(
+            'target' => '_blank',
+          ),
         ));
         $log_detail_link = Link::fromTextAndUrl($message, $url);
         $rows[] = array(
@@ -253,7 +254,17 @@ class LogmanWatchdogSearchForm extends FormBase {
         t('Referrer'),
         t('DateTime'),
       );
-      $themed_result = theme('table', array('header' => $header, 'rows' => $rows));
+
+      $table = array(
+        '#type' => 'table',
+        '#header' => $header,
+        '#rows' => $rows,
+        '#attributes' => array(
+          'id' => 'logman-watchdog-search',
+        ),
+      );
+      // var_dump($search_result->pagination);
+      $themed_result = \Drupal::service('renderer')->render($table);
     }
     else {
       $themed_result = t('No matches found.');

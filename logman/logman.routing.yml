@@ -20,7 +20,7 @@ logman.watchdog_search_form:
   requirements:
     _permission: 'access logman'
 logman.watchdog_detail_form:
-  path: /admin/reports/logman/watchdog/{wid}/detail
+  path: /admin/reports/logman/watchdog/detail
   defaults:
     _title: 'Logman Watchdog Log Detail'
     _form: \Drupal\logman\Form\LogmanWatchdogDetailForm

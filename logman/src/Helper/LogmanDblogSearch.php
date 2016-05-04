@@ -8,6 +8,9 @@
 
 namespace Drupal\logman\Helper;
 
+use Drupal\Core\Database\Database;
+use Drupal\Core\Database\Query\Condition;
+
 /**
  * Implements the search, filtering and statistics
  * function for drupal watchdog logs.
@@ -56,7 +59,7 @@ class LogmanDblogSearch implements LogmanSearchInterface {
 
     // Filter on url if it is mentioned.
     if (!empty($url)) {
-      $sql_criteria .= " location = '$url' ";
+      $sql_criteria .= " location like '%$url' ";
     }
 
     // Add the date range if it is mentioned.
@@ -73,7 +76,7 @@ class LogmanDblogSearch implements LogmanSearchInterface {
     $sql .= " GROUP BY $against ORDER BY $against ";
 
     // Prepare statistics array.
-    $result = db_query($sql, $query_tok_values);
+    $result = Database::getConnection('default')->query($sql, $query_tok_values);
     $statistics = array();
     while ($row = $result->fetchObject()) {
       $statistics[] = $row;
@@ -127,7 +130,7 @@ class LogmanDblogSearch implements LogmanSearchInterface {
    */
   public function searchLog($params = array()) {
     // Basic sql search query with place holders.
-    $query = db_select('watchdog', 'w');
+    $query = Database::getConnection('default')->select('watchdog', 'w');
 
     // Apply the search criteria.
     // Search key.
@@ -161,24 +164,29 @@ class LogmanDblogSearch implements LogmanSearchInterface {
       }
     }
 
-    // Add sorting on timestamp.
-    $query->orderBy('timestamp', 'DESC');
-    $count_query = $query;
-    $query->fields('w');
-    $result = $query->extend('PagerDefault')
-              ->limit($this->limit)
-              ->execute();
+    $count_query = clone $query;
+    $count_query->addExpression('Count(1)');
+    // $query->fields('w');
+    //'Drupal\Core\Database\Query\PagerSelectExtender'
+    // $result = $query->extend('Drupal\Core\Database\Query\PagerSelectExtender')
+    $paged_query = $query->extend('Drupal\Core\Database\Query\PagerSelectExtender');
+    $paged_query->limit($this->limit);
+    $paged_query->setCountQuery($count_query);
+    $result = $paged_query->fields('w')
+      // Add sorting on timestamp.
+      ->orderBy('timestamp', 'DESC')
+      ->execute();
+
     $matches = array();
     while ($row = $result->fetchAssoc()) {
       $matches[] = $row;
     }
 
     // Return the result sets and matches.
-    $count_query->addExpression('COUNT(1)', 'count');
     $total_result_count = $count_query->execute()->fetchField();
     $result_sets = ceil($total_result_count / $this->limit);
     $pagination_params = array('search_key' => $this->searchKey, 'log_type' => $this->type) + $params;
-    $pager = array('#theme' => 'pager', array('quantity' => $this->quantity, 'parameters' => $pagination_params));
+    $pager = array('#type' => 'pager', $pagination_params);
     $pagination = \Drupal::service('renderer')->render($pager);
 
     return (object) array(
@@ -198,8 +206,10 @@ class LogmanDblogSearch implements LogmanSearchInterface {
    *   Object containing detailed watchdog log data.
    */
   public function getLogDetail($log_id) {
-    $sql = "SELECT * FROM {watchdog} WHERE wid = %d";
-    $result = db_query($sql, array($log_id));
+    $query = Database::getConnection('default')->select('watchdog', 'w');
+    $result = $query->fields('w')
+      ->condition('wid', $log_id, '=')
+      ->execute();
     if ($row = $result->fetchAssoc()) {
       return $row;
     }
@@ -218,7 +228,7 @@ class LogmanDblogSearch implements LogmanSearchInterface {
     // Get the types in watchdog table.
     $log_types = array();
     $sql = "SELECT distinct type FROM {watchdog}";
-    $result = db_query($sql);
+    $result = Database::getConnection('default')->query($sql);
     while ($row = $result->fetchObject()) {
       $log_types[$row->type] = ucwords($row->type);
     }

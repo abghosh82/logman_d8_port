@@ -4,20 +4,29 @@
  * Logman module file.
  */
 
+use Drupal\Core\Url;
+use Drupal\Core\Link;
 use Drupal\logman\Helper\LogmanWatchdogSearch;
 use Drupal\logman\Helper\LogmanApacheSearch;
 
 /**
- * Implements hook_page_alter().
+ * Implements hook_page_attachments().
+ */
+function logman_page_attachments(array &$attachments) {
+  $attachments['#attached']['library'][] = 'logman/logman-page-statistics';
+}
+
+/**
+ * Implements hook_page_bottom().
  *
  * Insert the logman on page statistics at
  * the default bottom right hand side corner.
  */
-function logman_page_alter(&$page) {
+function logman_page_bottom(array &$page_bottom) {
   if (logman_visibility() === TRUE) {
+    // @FIXME: Fix the logman page statistics.
     $logman_page_statistics = logman_get_page_statistics();
-    $page['page_bottom']['logman']['#attached']['library'][] = 'logman/logman-page-statistics';
-    $page['page_bottom']['logman']['#attached']['#markup'] = \Drupal::service('renderer')->render($logman_page_statistics);
+    $page_bottom['logman']['#markup'] = \Drupal::service('renderer')->render($logman_page_statistics);
   }
 }
 
@@ -56,9 +65,10 @@ function logman_get_page_statistics() {
       $date_range = array();
   }
 
-  $url = url(current_path(), array('absolute' => TRUE));
+  $path = \Drupal::service('path.current')->getPath();
   $watchdog = new LogmanWatchdogSearch();
-  $statistics = $watchdog->getPageStatistics($url, $date_range);
+  $statistics = $watchdog->getPageStatistics($path, $date_range);
+
   // Theme the statistics.
   $duration_token = array(
     '@duration' => $statistics_duration,
@@ -71,7 +81,7 @@ function logman_get_page_statistics() {
       $error_count = $item->count;
       $options = array(
         'query' => array(
-          'location' => $url,
+          'location' => $path,
           'date_from' => array(
             'date' => isset($date_range[0]) ? date('Y-m-d', $date_range[0]) : '',
             'time' => isset($date_range[0]) ? date('H:i:s', $date_range[0]) : '',
@@ -84,13 +94,12 @@ function logman_get_page_statistics() {
         ),
       );
 
-      $url = Url::fromRoute('logman.statistics_form', $options);
+      $url = Url::fromRoute('logman.statistics_form', array(), $options);
       $themed_statistics_details[] = Link::fromTextAndUrl("$error_count $error_type", $url);
     }
-    $statistics_class = $severity_levels[$statistics[0]->severity];
-    end($themed_statistics_details);
-    $themed_statistics_details[key($themed_statistics_details)] .= ' ' . t('since last @duration @unit', $duration_token);
-    $themed_statistics = '<div class="statistics_item">' . implode(',</div><div class="statistics_item">', $themed_statistics_details) . '</div></div>';
+    $statistics_class = logman_get_severity_name($statistics[0]->severity);
+    $themed_statistics_details[] .= ' ' . t('since last @duration @unit', $duration_token);
+    // $themed_statistics = '<div class="statistics_item">' . implode(',</div><div class="statistics_item">', $themed_statistics_details) . '</div></div>';
   }
   else {
     $statistics_class = 'no_errors';
@@ -98,7 +107,8 @@ function logman_get_page_statistics() {
   }
 
   return array(
-    'logman_page_statistics' => $themed_statistics,
+    '#theme' => 'logman_area',
+    'logman_page_statistics' => $themed_statistics_details,
     'log_class' => 'lm_' . $statistics_class,
   );
 }
@@ -112,9 +122,11 @@ function logman_get_page_statistics() {
  *   Visibility decision.
  */
 function logman_visibility() {
-  if (\Drupal::currentUser()->hasPermission('access logman') && \Drupal::config('logman.settings')->get('logman_show_page_statistics') == 1) {
+  // @TODO: Re-enable the logman page statistics.
+  return FALSE;
+  /*if (\Drupal::currentUser()->hasPermission('access logman') && \Drupal::config('logman.settings')->get('logman_show_page_statistics') == 1) {
     return TRUE;
-  }
+  }*/
 }
 
 /**
@@ -204,11 +216,14 @@ function logman_get_severity_name($against) {
   foreach ($severity_levels as $level) {
     list($name, $level_num) = $level;
     if ($level_num == $against) {
-      $severity_name .= ucwords($name) . ' ';
+      $severity_name[] = ucwords($name);
     }
   }
   if (empty($severity_name)) {
     $severity_name = t('Unknown');
+  }
+  else {
+    $severity_name = implode(' | ', $severity_name);
   }
 
   return $severity_name;

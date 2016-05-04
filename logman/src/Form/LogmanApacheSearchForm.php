@@ -11,6 +11,7 @@ use Drupal\Core\Form\FormBase;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Render\Element;
 use Drupal\Core\Url;
+use Drupal\Core\Link;
 use Drupal\logman\Helper\LogmanApacheSearch;
 
 class LogmanApacheSearchForm extends FormBase {
@@ -183,11 +184,12 @@ class LogmanApacheSearchForm extends FormBase {
           '#header' => $header,
           '#rows' => $search_result->data,
           '#attributes' => array(
-            'id' => 'my-module-table',
+            'id' => 'logman-apache-search',
           ),
         );
         $output = \Drupal::service('renderer')->render($table);
-        $pager = array('#theme' => 'pager', array('quantity' => $quantity, 'parameters' => $option));
+        pager_default_initialize($search_result->totalCount, $item_per_page);
+        $pager = array('#type' => 'pager', array('quantity' => $quantity, 'parameters' => $option));
         $output .= \Drupal::service('renderer')->render($pager);
 
         return array(
