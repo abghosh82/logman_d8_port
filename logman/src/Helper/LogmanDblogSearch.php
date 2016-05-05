@@ -166,9 +166,6 @@ class LogmanDblogSearch implements LogmanSearchInterface {
 
     $count_query = clone $query;
     $count_query->addExpression('Count(1)');
-    // $query->fields('w');
-    //'Drupal\Core\Database\Query\PagerSelectExtender'
-    // $result = $query->extend('Drupal\Core\Database\Query\PagerSelectExtender')
     $paged_query = $query->extend('Drupal\Core\Database\Query\PagerSelectExtender');
     $paged_query->limit($this->limit);
     $paged_query->setCountQuery($count_query);

@@ -116,10 +116,8 @@ class LogmanWatchdogSearchForm extends FormBase {
 
     // Date range from.
     $form['watchdog_search']['date_from'] = [
-      '#type' => 'date_popup',
+      '#type' => 'date',
       '#title' => t('From'),
-      '#date_format' => 'Y-m-d H:i:s',
-      '#date_year_range' => '-0:+0',
       '#default_value' => $form_state->getValue([
         'date_from'
         ]) ? $form_state->getValue(['date_from']) : NULL,
@@ -129,10 +127,8 @@ class LogmanWatchdogSearchForm extends FormBase {
 
     // Date range to.
     $form['watchdog_search']['date_to'] = [
-      '#type' => 'date_popup',
+      '#type' => 'date',
       '#title' => t('To'),
-      '#date_format' => 'Y-m-d H:i:s',
-      '#date_year_range' => '-0:+0',
       '#default_value' => $form_state->getValue([
         'date_to'
         ]) ? $form_state->getValue(['date_to']) : NULL,
@@ -147,8 +143,11 @@ class LogmanWatchdogSearchForm extends FormBase {
     ];
 
     // Display the search result.
-    $items_per_page = \Drupal::config('logman.settings')->get('logman_items_per_page');
-    $search_result = $this->searchResult($form_state, $items_per_page);
+    $search_result = $form_state->getValue('search_result');
+    if (empty($search_result)) {
+      $items_per_page = \Drupal::config('logman.settings')->get('logman_items_per_page');
+      $search_result = $this->searchResult($form_state, $items_per_page);
+    }
     if (!empty($search_result['themed_result'])) {
       $form['watchdog_search_result'] = [
         '#type' => 'fieldset',
@@ -170,6 +169,10 @@ class LogmanWatchdogSearchForm extends FormBase {
   }
 
   public function submitForm(array &$form, \Drupal\Core\Form\FormStateInterface $form_state) {
+    unset($_GET['page']);
+    $items_per_page = \Drupal::config('logman.settings')->get('logman_items_per_page');
+    $search_result = $this->searchResult($form_state, $items_per_page);
+    $form_state->setValue('search_result', $search_result);
     $form_state->setRebuild(TRUE);
   }
 
