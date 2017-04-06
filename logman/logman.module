@@ -24,22 +24,44 @@ function logman_page_attachments(array &$attachments) {
  */
 function logman_page_bottom(array &$page_bottom) {
   if (logman_visibility() === TRUE) {
-    // @FIXME: Fix the logman page statistics.
+    // Prepare the renderable array for logman statistics.
     $logman_page_statistics = logman_get_page_statistics();
-    $page_bottom['logman']['#markup'] = \Drupal::service('renderer')->render($logman_page_statistics);
+    $page_bottom['logman'] =  array(
+      '#type' => 'container',
+      '#attributes' => array(
+        'id' => array('logman_container'),
+        'class' => array($logman_page_statistics['log_class']),
+      ),
+    );
+    $page_bottom['logman']['icon'] =  array(
+      '#type' => 'container',
+      '#attributes' => array(
+        'id' => array('logman_icon'),
+      ),
+    );
+    $page_bottom['logman']['icon']['#markup'] = t('Logman');
+    $page_bottom['logman']['close'] =  array(
+      '#type' => 'container',
+      '#attributes' => array(
+        'id' => array('logman_icon_close'),
+      ),
+    );
+    $page_bottom['logman']['close']['#markup'] = t('Close');
+    $page_bottom['logman']['statistics'] =  array(
+      '#type' => 'container',
+      '#attributes' => array(
+        'id' => array('logman_statistics'),
+        'class' => array('inactive'),
+      ),
+    );
+    $page_bottom['logman']['statistics']['#markup'] = $logman_page_statistics['logman_page_statistics'];
+    $page_bottom['logman']['clear'] =  array(
+      '#type' => 'container',
+      '#attributes' => array(
+        'class' => array('logman_clear'),
+      ),
+    );
   }
-}
-
-/**
- * Implements hook_theme().
- */
-function logman_theme($existing, $type, $theme, $path) {
-  return array(
-    'logman_area' => array(
-      'template' => 'theme/logman_area',
-      'variables' => array('logman_page_statistics' => NULL, 'log_class' => NULL),
-    ),
-  );
 }
 
 /**
@@ -94,12 +116,12 @@ function logman_get_page_statistics() {
         ),
       );
 
-      $url = Url::fromRoute('logman.statistics_form', array(), $options);
-      $themed_statistics_details[] = Link::fromTextAndUrl("$error_count $error_type", $url);
+      $url = \Drupal\Core\Url::fromRoute('logman.statistics_form', [], $options);
+      $themed_statistics_details[] =  Drupal::l("$error_count $error_type", $url);
     }
-    $statistics_class = logman_get_severity_name($statistics[0]->severity);
+    $statistics_class = strtolower(logman_get_severity_name($statistics[0]->severity));
     $themed_statistics_details[] .= ' ' . t('since last @duration @unit', $duration_token);
-    // $themed_statistics = '<div class="statistics_item">' . implode(',</div><div class="statistics_item">', $themed_statistics_details) . '</div></div>';
+    $themed_statistics = '<div class="statistics_item">' . implode(',</div><div class="statistics_item">', $themed_statistics_details) . '</div></div>';
   }
   else {
     $statistics_class = 'no_errors';
@@ -107,8 +129,7 @@ function logman_get_page_statistics() {
   }
 
   return array(
-    '#theme' => 'logman_area',
-    'logman_page_statistics' => $themed_statistics_details,
+    'logman_page_statistics' => $themed_statistics,
     'log_class' => 'lm_' . $statistics_class,
   );
 }
@@ -122,11 +143,12 @@ function logman_get_page_statistics() {
  *   Visibility decision.
  */
 function logman_visibility() {
-  // @TODO: Re-enable the logman page statistics.
-  return FALSE;
-  /*if (\Drupal::currentUser()->hasPermission('access logman') && \Drupal::config('logman.settings')->get('logman_show_page_statistics') == 1) {
+  // Display on all pages based on permission
+  // but hide it on logman pages.
+  if (\Drupal::currentUser()->hasPermission('access logman') && \Drupal::config('logman.settings')->get('logman_show_page_statistics') == 1
+      && strpos(\Drupal::service('path.current')->getPath(), \Drupal\Core\Url::fromRoute('logman.statistics_form')->toString()) === FALSE) {
     return TRUE;
-  }*/
+  }
 }
 
 /**
@@ -223,7 +245,7 @@ function logman_get_severity_name($against) {
     $severity_name = t('Unknown');
   }
   else {
-    $severity_name = implode(' | ', $severity_name);
+    $severity_name = reset($severity_name);
   }
 
   return $severity_name;

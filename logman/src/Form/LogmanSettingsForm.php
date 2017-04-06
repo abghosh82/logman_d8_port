@@ -15,6 +15,11 @@ use Drupal\logman\Helper\LogmanGraylogSearch;
 class LogmanSettingsForm extends ConfigFormBase {
 
   /**
+   * Log message truncate length.
+   */
+  const MSG_TRUNCATE_LENGTH = 150;
+
+  /**
    * {@inheritdoc}
    */
   public function getFormId() {
@@ -59,11 +64,13 @@ class LogmanSettingsForm extends ConfigFormBase {
       '#type' => 'select',
       '#options' => [
         'dblog' => t('Dblog'),
-        'gelf' => t('Gelf'),
+        // @TODO: Ebnable gelf
+        // Gelf is not supproted currently.
+        // 'gelf' => t('Gelf'),
       ],
       '#title' => t('Watchdog log type'),
       '#default_value' => \Drupal::config('logman.settings')->get('logman_watchdog_log_type'),
-      '#description' => t("Please select the watchdog log type as Dblog or Gelf."),
+      '#description' => t("Please select the watchdog log type as Dblog."),
       '#required' => TRUE,
     ];
 
@@ -160,6 +167,19 @@ class LogmanSettingsForm extends ConfigFormBase {
       '#default_value' => \Drupal::config('logman.settings')->get('logman_google_chart_api_url'),
       '#description' => t("The google chart API URL"),
       '#size' => 100,
+    ];
+
+    $message_truncate_length =  \Drupal::config('logman.settings')->get('logman_message_truncate_length');
+    $message_truncate_length = empty($message_truncate_length) ? self::MSG_TRUNCATE_LENGTH : $message_truncate_length;
+    $form['logman_message_truncate_length'] = [
+      '#type' => 'textfield',
+      '#title' => t('Log message truncate length'),
+      '#default_value' => $message_truncate_length,
+      '#description' => t(
+        "Log message truncate length. A value of @len works well so default is set to @len.",
+        array('@len' => $message_truncate_length)
+      ),
+      '#size' => 5,
     ];
 
     return parent::buildForm($form, $form_state);

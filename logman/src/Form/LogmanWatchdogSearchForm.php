@@ -17,6 +17,11 @@ use Drupal\logman\Helper\LogmanWatchdogSearch;
 class LogmanWatchdogSearchForm extends FormBase {
 
   /**
+   * Log message truncate length.
+   */
+  const MSG_TRUNCATE_LENGTH = 150;
+
+  /**
    * {@inheritdoc}
    */
   public function getFormId() {
@@ -235,7 +240,10 @@ class LogmanWatchdogSearchForm extends FormBase {
             'target' => '_blank',
           ),
         ));
-        $log_detail_link = Link::fromTextAndUrl($message, $url);
+        $message_truncate_length =  \Drupal::config('logman.settings')->get('logman_message_truncate_length');
+        $message_truncate_length = empty($message_truncate_length) ? self::MSG_TRUNCATE_LENGTH : $message_truncate_length;
+        $display_msg = (strlen($message) > $message_truncate_length) ? substr($message, 0, $message_truncate_length) . '...' : $message;
+        $log_detail_link = Link::fromTextAndUrl($display_msg, $url);
         $rows[] = array(
           $data['wid'],
           ucwords($data['type']),

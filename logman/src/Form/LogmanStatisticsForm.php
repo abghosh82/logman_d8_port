@@ -27,16 +27,16 @@ class LogmanStatisticsForm extends FormBase {
     $form['#attached']['library'][] = 'logman/logman-statistics';
 
     // JS settings for statistics and charting.
-      $settings = [
-          'logmanStatistics' => [
-            'watchdogPlaceholder' => 'watchdog_chart',
-            'apachePlaceholder' => 'apache_chart',
-            'watchdogTablePlaceholder' => 'watchdog_table',
-            'apacheTablePlaceholder' => 'apache_table',
-            'watchdogDataSelector' => 'watchdog_data',
-            'apacheDataSelector' => 'apache_data',
-          ],
-      ];
+    $settings = [
+      'logmanStatistics' => [
+        'watchdogPlaceholder' => 'watchdog_chart',
+        'apachePlaceholder' => 'apache_chart',
+        'watchdogTablePlaceholder' => 'watchdog_table',
+        'apacheTablePlaceholder' => 'apache_table',
+        'watchdogDataSelector' => 'watchdog_data',
+        'apacheDataSelector' => 'apache_data',
+      ],
+    ];
 
     $watchdog_against_options = ['severity', 'type'];
     $watchdog = new LogmanWatchdogSearch();
@@ -55,9 +55,10 @@ class LogmanStatisticsForm extends FormBase {
       }
     }
     else {
-      $url = Url::fromRoute('logman.settings_form');
-      $link = Link::fromTextAndUrl(t('Please provide a valid apache access log path.'), $url);
-      drupal_set_message(t('Apache access log path either empty or not valid. !path', array('!path' => $link)));
+      $url = \Drupal\Core\Url::fromRoute('logman.settings_form');
+      $link = \Drupal\Core\Link::fromTextAndUrl(t('Please provide a valid apache access log path.'), $url);
+      $link = $link->toRenderable();
+      drupal_set_message(t('Apache access log path either empty or not valid. %path', array('%path' => render($link))));
     }
 
     // Add the JS settings array.
